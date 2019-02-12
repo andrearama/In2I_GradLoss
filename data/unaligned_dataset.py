@@ -14,7 +14,7 @@ class UnalignedDataset(BaseDataset):
         self.root = opt.dataroot
         self.dir_A = os.path.join(opt.dataroot, opt.phase + 'A')
         self.dir_B = os.path.join(opt.dataroot, opt.phase + 'B')
-	self.no_input = opt.no_input
+        self.no_input = opt.no_input
         self.A_paths = make_dataset(self.dir_A)
         self.B_paths = make_dataset(self.dir_B)
 
@@ -25,28 +25,28 @@ class UnalignedDataset(BaseDataset):
         self.transform = get_transform(opt)
 
         osize = [opt.loadSize, opt.loadSize*self.opt.input_nc]
-	opt.fineSize*self.no_input*self.opt.input_nc
-	self.transformA = []
+        opt.fineSize*self.no_input*self.opt.input_nc
+        self.transformA = []
         self.transformA.append(transforms.Scale((opt.fineSize*2 , opt.fineSize), Image.BICUBIC))
-	self.transformA += [transforms.ToTensor(),
+        self.transformA += [transforms.ToTensor(),
                        transforms.Normalize((0.5, 0.5, 0.5),
                                             (0.5, 0.5, 0.5))]
         #self.transformA.append(transforms.RandomCrop((opt.fineSize,opt.fineSize*self.opt.input_nc) ))
-	self.transformA = transforms.Compose(self.transformA)
+        self.transformA = transforms.Compose(self.transformA)
     def __getitem__(self, index):
         A_path = self.A_paths[index % self.A_size]
         index_A = index % self.A_size
         index_B = random.randint(0, self.B_size - 1)
         B_path = self.B_paths[index_B]
-	       
-	# print('(A, B) = (%d, %d)' % (index_A, index_B))
+               
+        # print('(A, B) = (%d, %d)' % (index_A, index_B))
         A_img = Image.open(A_path)#.convert('RGB') # A image is a no_input*3 collection of images
-	A_img = (self.transformA(A_img))
-	A1 = A_img[1,0:256,:]
-	A2 = A_img[1,256:512,:]
-	A1 = A1.unsqueeze(0).numpy()
-	A2 = A2.unsqueeze(0).numpy()
-	B_img = Image.open(B_path)#.convert('RGB')
+        A_img = (self.transformA(A_img))
+        A1 = A_img[1,0:256,:]
+        A2 = A_img[1,256:512,:]
+        A1 = A1.unsqueeze(0).numpy()
+        A2 = A2.unsqueeze(0).numpy()
+        B_img = Image.open(B_path)#.convert('RGB')
         B = self.transform(B_img)
         if self.opt.which_direction == 'BtoA':
             input_nc = self.opt.output_nc
@@ -55,7 +55,7 @@ class UnalignedDataset(BaseDataset):
             input_nc = self.opt.input_nc
             output_nc = self.opt.output_nc
 
-	# For now only support RGB
+        # For now only support RGB
         #if input_nc == 1:  # RGB to gray
         #    tmp = A[0, ...] * 0.299 + A[1, ...] * 0.587 + A[2, ...] * 0.114
         #    A = tmp.unsqueeze(0)

@@ -22,7 +22,7 @@ class CycleGANModel(BaseModel):
         size = opt.fineSize     
         self.no_input = opt.no_input
         self.input_A1 = self.Tensor(nb, opt.input_nc, size, size) # store inputs in a tensor # DONE
-        self.input_A2 = self.Tensor(nb, opt.input_nc, size, size) # store inputs in a tensor # DONE
+        self.input_A2 = self.Tensor(nb, opt.input_nc2, size, size) # store inputs in a tensor # DONE
         self.input_B = self.Tensor(nb, opt.output_nc, size, size)
 
         # load/define networks
@@ -46,7 +46,7 @@ class CycleGANModel(BaseModel):
             self.netD_B1=networks.define_D(opt.input_nc, opt.ndf,
                                             opt.which_model_netD,
                                             opt.n_layers_D, opt.norm, use_sigmoid, opt.init_type, self.gpu_ids)
-            self.netD_B2=networks.define_D(opt.input_nc, opt.ndf,
+            self.netD_B2=networks.define_D(opt.input_nc2, opt.ndf,
                                             opt.which_model_netD,
                                             opt.n_layers_D, opt.norm, use_sigmoid, opt.init_type, self.gpu_ids)
 

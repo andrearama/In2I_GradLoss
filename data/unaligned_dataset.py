@@ -27,7 +27,7 @@ class UnalignedDataset(BaseDataset):
         osize = [opt.loadSize, opt.loadSize*self.opt.input_nc]
         opt.fineSize*self.no_input*self.opt.input_nc
         self.transformA = []
-        self.transformA.append(transforms.Scale((opt.fineSize , opt.fineSize*2), Image.BICUBIC))
+        self.transformA.append(transforms.Scale((opt.fineSize , opt.fineSize*3), Image.BICUBIC))
         self.transformA += [transforms.ToTensor(),
                        transforms.Normalize((0.5, 0.5, 0.5),
                                             (0.5, 0.5, 0.5))]
@@ -44,8 +44,10 @@ class UnalignedDataset(BaseDataset):
         A_img = (self.transformA(A_img))
         A1 = A_img[:,:,0:256]
         A2 = A_img[1,:,256:512]
+        A3 = A_img[1,:,512:768] #HC
 #        A1 = A1.unsqueeze(0).numpy()
         A2 = A2.unsqueeze(0).numpy()
+        A3 = A3.unsqueeze(0).numpy()
 #        A1 = self.transform(A1)
         B_img = Image.open(B_path)#.convert('RGB')
         B = self.transform(B_img)
@@ -64,7 +66,7 @@ class UnalignedDataset(BaseDataset):
         #if output_nc == 1:  # RGB to gray
         #    tmp = B[0, ...] * 0.299 + B[1, ...] * 0.587 + B[2, ...] * 0.114
         #    B = tmp.unsqueeze(0)
-        return {'A1': A1, 'A2':A2, 'B': B,
+        return {'A1': A1, 'A2':A2,'A3':A3, 'B': B,
                 'A_paths': A_path, 'B_paths': B_path}
 
     def __len__(self):

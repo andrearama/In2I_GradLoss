@@ -44,10 +44,10 @@ class UnalignedDataset(BaseDataset):
         A_img = (self.transformA(A_img))
         A1 = A_img[:,:,0:256]
         A2 = A_img[1,:,256:512]
-        A3 = A_img[1,:,512:768] #HC
+        A3 = A_img[:,:,512:768] #HC
 #        A1 = A1.unsqueeze(0).numpy()
         A2 = A2.unsqueeze(0).numpy()
-        A3 = A3.unsqueeze(0).numpy()
+#        A3 = A3.unsqueeze(0).numpy()
 #        A1 = self.transform(A1)
         B_img = Image.open(B_path)#.convert('RGB')
         B = self.transform(B_img)

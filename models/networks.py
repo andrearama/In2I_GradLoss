@@ -347,7 +347,7 @@ class ResnetGeneratorMMReverse(nn.Module):
         model_post2 += [nn.Tanh()]
 
         model_post3 += [nn.ReflectionPad2d(3)]
-        model_post3 += [nn.Conv2d(ngf, 1, kernel_size=7, padding=0)]  #HC
+        model_post3 += [nn.Conv2d(ngf, 3, kernel_size=7, padding=0)]  #HC
         model_post3 += [nn.Tanh()]
 
         self.model_post1 = nn.Sequential(*model_post1)
@@ -393,7 +393,7 @@ class ResnetGeneratorMM(nn.Module):
                  nn.ReLU(True)]
 
         model3 = [nn.ReflectionPad2d(3),
-                 nn.Conv2d(1, ngf, kernel_size=7, padding=0, #HC
+                 nn.Conv2d(3, ngf, kernel_size=7, padding=0, #HC
                            bias=use_bias),
                  norm_layer(ngf),
                  nn.ReLU(True)]

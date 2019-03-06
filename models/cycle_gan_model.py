@@ -200,12 +200,12 @@ class CycleGANModel(BaseModel):
 
         # GAN loss
         # D_A(G_A(A))
-        self.loss_GL = self.get_Grad_Loss(self.real_A3, self.fake_B, self.real_A1) /3000     #HC
-        
         self.fake_B, latent_fB = self.netG_A.forward(self.real_A1 ,self.real_A2, self.real_A3)
         pred_fake = self.netD_A.forward(self.fake_B)
         self.loss_G_A = self.criterionGAN(pred_fake, True)
 
+        self.loss_GL = self.get_Grad_Loss(self.real_A3, self.fake_B, self.real_A1) /3000     #HC        
+        
         self.fake_A1, self.fake_A2, self.fake_A3, latent_fA = self.netG_B.forward(self.real_B)
         pred_fake1 = self.netD_B1.forward(self.fake_A1)
         pred_fake2 = self.netD_B2.forward(self.fake_A2)

@@ -30,6 +30,9 @@ class CycleGANModel(BaseModel):
         # The naming conversion is different from those used in the paper 
         # Code (paper): G_A (G), G_B (F), D_A (D_Y), D_B (D_X)
         print([opt.output_nc, opt.input_nc])
+        
+        self.CENet = networks.CENet(threshold=7.0)
+        
         self.netG_A = (networks.define_G(opt.input_nc, opt.output_nc,
                                         opt.ngf, 'resnetMM', opt.norm, not opt.no_dropout, opt.init_type, self.gpu_ids))
         #inputs = torch.randn(1,3,256,256)
@@ -97,6 +100,24 @@ class CycleGANModel(BaseModel):
             networks.print_network(self.netD_B3)
         print('-----------------------------------------------')
 
+        
+    def canny_t(self,img):
+        
+        batch = torch.stack([img]).float()
+        data = Variable(batch)
+        blurred_img, grad_mag, grad_orientation, thin_edges, thresholded, early_threshold = self.CENet(data)
+        
+        return torch.sign(early_threshold)
+
+    def get_Grad_Loss(self, label, fake, real):
+        fake = self.canny_t(fake, use_cuda = False)
+        label = self.canny_t(label, use_cuda = False)
+        real = self.canny_t(real, use_cuda = False)
+        
+        result = torch.mul (torch.abs(fake-real) , label )
+        loss = torch.sum(result)        
+        
+        
     def set_input(self, input):
         AtoB = self.opt.which_direction == 'AtoB'
         input_A1 = input['A1']
@@ -179,6 +200,8 @@ class CycleGANModel(BaseModel):
 
         # GAN loss
         # D_A(G_A(A))
+        self.loss_GL = self.get_Grad_Loss(self.real_A3, self.fake_B, self.real_A1) /3000     #HC
+        
         self.fake_B, latent_fB = self.netG_A.forward(self.real_A1 ,self.real_A2, self.real_A3)
         pred_fake = self.netD_A.forward(self.fake_B)
         self.loss_G_A = self.criterionGAN(pred_fake, True)
@@ -198,7 +221,7 @@ class CycleGANModel(BaseModel):
         self.latent_loss = lambda_latent*self.l1_loss(latent_fB, latent_rA)+lambda_latent*self.l1_loss(latent_fA, latent_rB)
 
 
-        self.loss_G = self.loss_G_A + self.loss_G_B + self.loss_cycle_A + self.loss_cycle_B + self.loss_idt_A + self.loss_idt_B + self.latent_loss
+        self.loss_G = self.loss_G_A + self.loss_G_B + self.loss_cycle_A + self.loss_cycle_B + self.loss_idt_A + self.loss_idt_B + self.latent_loss + loss_GL
         self.loss_G.backward()
 
     def optimize_parameters(self):

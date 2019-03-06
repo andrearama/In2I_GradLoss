@@ -1148,9 +1148,9 @@ class NLayerDiscriminator(nn.Module):
         
 ###############################################################################
 
-class Net(nn.Module):
+class CENet(nn.Module):
     def __init__(self, threshold=10.0, use_cuda=False):
-        super(Net, self).__init__()
+        super(CENet, self).__init__()
 
         self.threshold = threshold
         self.use_cuda = use_cuda

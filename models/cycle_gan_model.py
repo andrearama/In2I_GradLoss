@@ -102,21 +102,29 @@ class CycleGANModel(BaseModel):
 
         
     def canny_t(self,img):
-        
-        batch = torch.stack([img]).float()
-        data = Variable(batch)
-        blurred_img, grad_mag, grad_orientation, thin_edges, thresholded, early_threshold = self.CENet(data)
+ 
+        batch1 = torch.stack([img]).float()
+        use_cuda = True
+        if use_cuda:
+            self.CENet.cuda()
+        self.CENet.eval()
+
+        data1 = Variable(batch1)
+        if use_cuda:
+           data1 = Variable(batch1).cuda()
+
+        blurred_img, grad_mag, grad_orientation, thin_edges, thresholded, early_threshold = self.CENet(data1)
         
         return torch.sign(early_threshold)
 
     def get_Grad_Loss(self, label, fake, real):
-        fake = self.canny_t(fake, use_cuda = False)
-        label = self.canny_t(label, use_cuda = False)
-        real = self.canny_t(real, use_cuda = False)
+        fake = self.canny_t(torch.squeeze(fake))
+        label = self.canny_t(torch.squeeze(label))
+        real = self.canny_t(torch.squeeze(real))
         
         result = torch.mul (torch.abs(fake-real) , label )
-        loss = torch.sum(result)        
-        
+        loss_lg = torch.sum(result)        
+        return loss_lg
         
     def set_input(self, input):
         AtoB = self.opt.which_direction == 'AtoB'
@@ -221,7 +229,7 @@ class CycleGANModel(BaseModel):
         self.latent_loss = lambda_latent*self.l1_loss(latent_fB, latent_rA)+lambda_latent*self.l1_loss(latent_fA, latent_rB)
 
 
-        self.loss_G = self.loss_G_A + self.loss_G_B + self.loss_cycle_A + self.loss_cycle_B + self.loss_idt_A + self.loss_idt_B + self.latent_loss + loss_GL
+        self.loss_G = self.loss_G_A + self.loss_G_B + self.loss_cycle_A + self.loss_cycle_B + self.loss_idt_A + self.loss_idt_B + self.latent_loss +self.loss_GL
         self.loss_G.backward()
 
     def optimize_parameters(self):

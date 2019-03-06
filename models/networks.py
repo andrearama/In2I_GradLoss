@@ -1149,7 +1149,7 @@ class NLayerDiscriminator(nn.Module):
 ###############################################################################
 
 class CENet(nn.Module):
-    def __init__(self, threshold=10.0, use_cuda=False):
+    def __init__(self, threshold=10.0, use_cuda=True):
         super(CENet, self).__init__()
 
         self.threshold = threshold

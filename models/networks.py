@@ -1240,10 +1240,10 @@ class CENet(nn.Module):
         # COMPUTE THICK EDGES
 
         grad_mag = torch.sqrt(grad_x_r**2 + grad_y_r**2)
-        grad_mag += torch.sqrt(grad_x_g**2 + grad_y_g**2)
-        grad_mag += torch.sqrt(grad_x_b**2 + grad_y_b**2)
+        grad_mag = grad_mag +  torch.sqrt(grad_x_g**2 + grad_y_g**2)
+        grad_mag = grad_mag + torch.sqrt(grad_x_b**2 + grad_y_b**2)
         grad_orientation = (torch.atan2(grad_y_r+grad_y_g+grad_y_b, grad_x_r+grad_x_g+grad_x_b) * (180.0/3.14159))
-        grad_orientation += 180.0
+        grad_orientation = grad_orientation + 180.0
         grad_orientation =  torch.round( grad_orientation / 45.0 ) * 45.0
 
         # THIN EDGES (NON-MAX SUPPRESSION)

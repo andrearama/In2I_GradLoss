@@ -123,8 +123,9 @@ class CycleGANModel(BaseModel):
         real = self.canny_t(torch.squeeze(real))
         
         result = torch.mul (torch.abs(fake-real) , label )
-        loss_lg = torch.sum(result)        
-        return loss_lg
+        loss_lg = torch.sum(result)       
+        print(loss_lg/6000)
+        return loss_lg/6000
         
     def set_input(self, input):
         AtoB = self.opt.which_direction == 'AtoB'
@@ -212,7 +213,7 @@ class CycleGANModel(BaseModel):
         pred_fake = self.netD_A.forward(self.fake_B)
         self.loss_G_A = self.criterionGAN(pred_fake, True)
 
-        self.loss_GL = self.get_Grad_Loss(self.real_A3, self.fake_B, self.real_A1) /3000     #HC        
+        self.loss_GL = self.get_Grad_Loss(self.real_A3, self.fake_B, self.real_A1)        
         
         self.fake_A1, self.fake_A2, self.fake_A3, latent_fA = self.netG_B.forward(self.real_B)
         pred_fake1 = self.netD_B1.forward(self.fake_A1)

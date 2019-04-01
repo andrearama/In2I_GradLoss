@@ -11,6 +11,9 @@ from .base_model import BaseModel
 from . import networks
 import sys
 from models.visualize import make_dot
+import torch.nn as nn
+from torchvision import transforms
+
 
 class CycleGANModel(BaseModel):
     def name(self):
@@ -32,6 +35,9 @@ class CycleGANModel(BaseModel):
         print([opt.output_nc, opt.input_nc])
         
         self.CENet = networks.CENet(threshold=7.0)
+        for param in self.CENet.parameters():
+                print(param)
+#                param.requires_grad = False
         
         self.netG_A = (networks.define_G(opt.input_nc, opt.output_nc,
                                         opt.ngf, 'resnetMM', opt.norm, not opt.no_dropout, opt.init_type, self.gpu_ids))
@@ -115,18 +121,75 @@ class CycleGANModel(BaseModel):
 
         blurred_img, grad_mag, grad_orientation, thin_edges, thresholded, early_threshold = self.CENet(data1)
         
-        return torch.sign(early_threshold)
+        return early_threshold
+
+    def get_edges(self,x):
+#         x = Variable(x)
+#         print(x.requires_grad,"x requrired grad?")
+         M,N = x.shape[2:]
+         x = 0.2989 * x[:,0,:,:] + 0.5870 * x[:,1,:,:] + 0.1140 * x[:,2,:,:]
+         x = x.unsqueeze(0)
+         a=np.array([[1, 0, -1],[2,0,-2],[1,0,-1]])
+#         x.register_hook(print)
+         conv1=nn.Conv2d(1, 1, kernel_size=3, stride=1, padding=1, bias=False)
+         conv1.weight=nn.Parameter(torch.from_numpy(a).float().unsqueeze(0).unsqueeze(0).cuda() )
+                                                      
+         G_x = conv1(x).squeeze(0)
+     #    G_x.register_hook(print)
+#         print(G_x.requires_grad, "G_x requires grad?")                                  
+         b=np.array([[1, 2, 1],[0,0,0],[-1,-2,-1]])
+                                                               #b=np.array([[1, 0, -1],[0,0,0],[1,0,-1]])
+         conv2=nn.Conv2d(1, 1, kernel_size=3, stride=1, padding=1, bias=False)
+         conv2.weight=nn.Parameter(torch.from_numpy(b).float().unsqueeze(0).unsqueeze(0).cuda())
+         G_y=conv2(x).squeeze(0)
+      #   G_y.register_hook(print)                                                                                                                             
+         mm = (torch.pow(G_x,2)+ torch.pow(G_y,2))
+         return mm
+         return torch.sqrt(mm)
 
     def get_Grad_Loss(self, label, fake, real):
-        fake = self.canny_t(torch.squeeze(fake))
-        label = self.canny_t(torch.squeeze(label))
-        real = self.canny_t(torch.squeeze(real))
-        
-        result = torch.mul (torch.abs(fake-real) , label )
-        loss_lg = torch.sum(result)       
-        print(loss_lg/6000)
-        return loss_lg/6000
-        
+        fake1 = self.get_edges(fake)
+        label = self.get_edges(label)
+        real = self.get_edges(real)
+
+  #      print(self.real_A1.shape,"A1")
+  #      print(self.real_A2.shape,"A2")
+  #      print(self.real_A3.shape,"A3")
+        self.deleteme = True
+        result = torch.mul (torch.abs(fake1-real) , label )
+        if torch.isnan(result).any(): 
+            oneone, duedue = self.netG_A.forward(self.real_A1 ,self.real_A2, self.real_A3)
+
+            for name, param in self.netG_A.named_parameters():
+                if torch.isnan(param).any() :
+                    print("WEIGHTS ARE NAN",ASDSDDDD)
+                if torch.isinf(param).any():
+                    print("Inf",hhhh)
+
+
+
+#          print(torch.isnan(oneone).any(),"oneone")
+  #          print(torch.isnan(duedue).any(),"duedue")
+
+  #          print(torch.isnan(self.real_A3).any(),"realc")
+  #          print(torch.isnan(fake).any(),"fake")
+  #          print(torch.isinf(self.real_A3).any(),"realc")
+  #          print(torch.isinf(fake).any(),"fake2")
+            self.deleteme = False
+
+#        result = torch.abs(fake-real) 
+        loss_lg = torch.sum(result)      
+   
+        print(loss_lg/60000,"Grad Loss")
+        return  loss_lg/60000
+
+
+    def O_get_Grad_Loss(self,label, fake,real):
+
+        return torch.sum(torch.mul(torch.abs(label - fake), real))/1000
+
+
+
     def set_input(self, input):
         AtoB = self.opt.which_direction == 'AtoB'
         input_A1 = input['A1']
@@ -230,8 +293,39 @@ class CycleGANModel(BaseModel):
         self.latent_loss = lambda_latent*self.l1_loss(latent_fB, latent_rA)+lambda_latent*self.l1_loss(latent_fA, latent_rB)
 
 
+ #       print(self.loss_cycle_A) 
         self.loss_G = self.loss_G_A + self.loss_G_B + self.loss_cycle_A + self.loss_cycle_B + self.loss_idt_A + self.loss_idt_B + self.latent_loss +self.loss_GL
-        self.loss_G.backward()
+#        self.latent_loss.backward()
+        print(self.loss_G,"LOSS G TOT")
+        if self.deleteme:
+           with torch.autograd.detect_anomaly():
+             self.loss_G.backward()
+        else:
+            print("LOSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS")
+            print(self.loss_GL)
+#        ccc = 0
+#        for name, param in self.netG_A.named_parameters():
+#            if param.requires_grad and ccc < 1:
+#                print(name,param.grad[0][0])
+#                ccc += 1
+#        self.loss_GL.backward()
+#        ccc = 0
+#        for name, param in self.netG_A.named_parameters():
+#            if param.requires_grad and ccc < 1:
+#                print(name,param.grad[0][0])
+#                ccc += 1
+
+#        self.lll = self.loss_GL
+#        self.lll.backward()
+#        print("ED IL PROSSIMO EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
+#        ccc = 0
+#        for name, param in self.netG_A.named_parameters():
+#            if param.requires_grad and ccc < 3:
+#                print(name,param.data)
+#                ccc += 1
+
+
+#print(self.netG_A.named_parameters())
 
     def optimize_parameters(self):
         # forward
@@ -250,7 +344,9 @@ class CycleGANModel(BaseModel):
         self.optimizer_D_B.step()
 
     def get_current_errors(self):
- #       D_A = self.loss_D_A.data[0]
+#        for param in self.CENet.parameters():
+#                print(param)
+        #       D_A = self.loss_D_A.data[0]
         D_A = self.loss_D_A.item() 
         G_A = self.loss_G_A.item() 
         Cyc_A = self.loss_cycle_A.item() 
